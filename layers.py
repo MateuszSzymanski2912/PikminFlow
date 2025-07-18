@@ -8,6 +8,7 @@ class Dense:
         self.input_size = input_size
         self.activation = activation
         self.weights = None
+        self.has_weights = True
 
     def forward(self, X: Tensor):
         X = Tensor(np.hstack((np.ones((X.values.shape[0], 1)), X.values)))
@@ -16,3 +17,31 @@ class Dense:
     def activate(self, X):
         func = getattr(Tensor, self.activation)
         return func(X)
+
+
+class LayerNorm:
+    def __init__(self):
+        self.epsilon = 1e-5
+        self.gamma = None
+        self.beta = None
+        self.has_weights= False
+
+    def forward(self, X: Tensor):
+        if self.gamma is None and self.beta is None:
+            self.gamma = Tensor(np.ones((X.values.shape[1],)), requires_grad=True)
+            self.beta = Tensor(np.zeros((X.values.shape[1],)), requires_grad=True)
+        return self.gamma * (X.values - X.values.mean(axis=1, keepdims=True)) / (X.values.std(axis=1, keepdims=True) + self.epsilon) + self.beta
+    
+
+class BatchNorm:
+    def __init__(self):
+        self.epsilon = 1e-5
+        self.gamma = None
+        self.beta = None
+        self.has_weights = False
+
+    def forward(self, X: Tensor):
+        if self.gamma is None and self.beta is None:
+            self.gamma = Tensor(np.ones((X.values.shape[0],)), requires_grad=True)
+            self.beta = Tensor(np.zeros((X.values.shape[0],)), requires_grad=True)
+        return self.gamma * (X.values - X.values.mean(axis=0, keepdims=True)) / (X.values.std(axis=0, keepdims=True) + self.epsilon) + self.beta
