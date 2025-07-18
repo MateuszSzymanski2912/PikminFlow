@@ -66,18 +66,19 @@ class AdamOptimizer(Optimizer):
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
-        self.m = [np.zeros_like(layer.weights) for layer in self.model.layers]
-        self.v = [np.zeros_like(layer.weights) for layer in self.model.layers]
-        self.m_hat = [np.zeros_like(layer.weights) for layer in self.model.layers]
-        self.v_hat = [np.zeros_like(layer.weights) for layer in self.model.layers]
+        self.m = [np.zeros_like(layer.weights) if hasattr(layer, 'weights') else None for layer in self.model.layers]
+        self.v = [np.zeros_like(layer.weights) if hasattr(layer, 'weights') else None for layer in self.model.layers]
+        self.m_hat = [np.zeros_like(layer.weights) if hasattr(layer, 'weights') else None for layer in self.model.layers]
+        self.v_hat = [np.zeros_like(layer.weights) if hasattr(layer, 'weights') else None for layer in self.model.layers]
 
     def update(self):
         for (l, layer) in enumerate(self.model.layers):
-            self.m[l] = self.beta1*self.m[l] + (1-self.beta1)*layer.weights.grad
-            self.v[l] = self.beta2*self.v[l] + (1-self.beta2)*layer.weights.grad**2
-            self.m_hat[l] = self.m[l]/(1-self.beta1**(self.model.epoch + 1))
-            self.v_hat[l] = self.v[l]/(1-self.beta2**(self.model.epoch + 1))
-            layer.weights.values -= self.model.learning_rate * self.m_hat[l]/(np.sqrt(self.v_hat[l]) + self.epsilon)
+            if layer.has_weights:
+                self.m[l] = self.beta1*self.m[l] + (1-self.beta1)*layer.weights.grad
+                self.v[l] = self.beta2*self.v[l] + (1-self.beta2)*layer.weights.grad**2
+                self.m_hat[l] = self.m[l]/(1-self.beta1**(self.model.epoch + 1))
+                self.v_hat[l] = self.v[l]/(1-self.beta2**(self.model.epoch + 1))
+                layer.weights.values -= self.model.learning_rate * self.m_hat[l]/(np.sqrt(self.v_hat[l]) + self.epsilon)
 
 
 

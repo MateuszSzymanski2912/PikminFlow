@@ -33,11 +33,11 @@ class Model:
     def _init_weights(self):
         rows = self.layers[0].input_size
         cols = self.layers[0].dim
-        self.layers[0].weights = Tensor(np.random.normal(0, 1/self.layers[0].input_size, (rows+1, cols)))
+        self.layers[0].weights = Tensor(np.random.normal(0, 1/rows, (rows+1, cols)))
         for k in range(1, len(self.layers)):
-            rows = self.layers[k-1].dim
-            cols = self.layers[k].dim
-            self.layers[k].weights = Tensor(np.random.normal(0, 1/self.layers[k-1].dim, (rows+1, cols)))
+            if hasattr(self.layers[k], 'dim'):
+                rows, cols = cols, self.layers[k].dim
+                self.layers[k].weights = Tensor(np.random.normal(0, 1/rows, (rows+1, cols)))
 
     def forward(self, X: Tensor):
         if not isinstance(X, Tensor):
@@ -60,7 +60,8 @@ class Model:
 
     def zero_grad(self):
         for layer in self.layers:
-            layer.weights.zero_grad()
+            if layer.has_weights:
+                layer.weights.zero_grad()
     
     def train_batch(self, X_batch: Tensor, y_batch):
         self.forward(X_batch)
