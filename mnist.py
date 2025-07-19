@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.datasets import mnist
-from layers import Dense
+from layers import *
 from model import Model
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 
@@ -18,7 +18,8 @@ y = y_train[:100]
 x_plot = x_train[0].reshape(1, -1)
 
 layers = [Dense(input_size=28*28, dim = 512, activation='relu'),
-            Dense(dim = 28*28, activation = 'linear')]
+          Dropout(p=0.1),
+          Dense(dim = 28*28, activation = 'linear')]
 
 model = Model()
 model.initialize(layers=layers, batch_size = 32, epochs = 1000, learning_rate=0.005, optimizer='adam', loss_function='mse')
