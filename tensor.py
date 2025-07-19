@@ -311,6 +311,23 @@ class Tensor:
         self._backward = _backward
         return self
     
+    def square(self):
+        out = Tensor(np.square(self.values), (self,), 'square')
+        def _backward():
+            if self.requires_grad:
+                self.grad += 2 * self.values * out.grad
+        out._backward = _backward
+        return out
+    
+    def square_(self):
+        old_values = self.values.copy()
+        self.values = np.square(self.values)
+        def _backward():
+            if self.requires_grad:
+                self.grad *= 2 * old_values
+        self._backward = _backward
+        return self
+    
     #activation functions
     def softmax(self):
         shifted = self.values - np.max(self.values, axis=-1, keepdims=True)
