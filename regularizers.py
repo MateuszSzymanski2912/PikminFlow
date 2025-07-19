@@ -22,5 +22,5 @@ class ElasticNet(Regularizer):
         self.l2_strength = self.strength * (1 - alpha)
 
     def __call__(self, W: Tensor):
-        return (self.l1_strength * W.get_weight_no_bias.abs().sum() +
+        return (self.l1_strength * W.abs().sum() +
                 self.l2_strength * W.square().sum())
