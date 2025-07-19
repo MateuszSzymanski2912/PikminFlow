@@ -36,7 +36,7 @@ im_pred = axes['A'].imshow(x_plot.reshape(28, 28), aspect='auto', cmap='gray')
 im_true = axes['B'].imshow(x_plot.reshape(28, 28), aspect='auto', cmap='gray')
 line_loss, = axes['C'].plot([], [], 'b-', label = 'Loss')
 axes['C'].set_xlim(0, model.epochs)
-axes['C'].set_ylim(0, 1.1*max(model.history['loss']))
+axes['C'].set_ylim(0, 1.1*max(model.history['train_loss']))
 axes['C'].legend()
 axes['C'].grid(True)
 
@@ -52,7 +52,7 @@ def init():
 def update(frame):
     y_pred = model.predictions_history[frame]
     im_pred.set_data(y_pred.reshape(28, 28))
-    line_loss.set_data(model.epoch_indices[:model.k*(frame + 1)], model.history['loss'][:model.k*(frame + 1)])
+    line_loss.set_data(model.epoch_indices[:model.k*(frame + 1)], model.history['train_loss'][:model.k*(frame + 1)])
     title.set_text(f"Visualization of autoencoder teaching itself MNIST images \n Epoch {model.prediction_epochs[frame]}")
     return im_pred, line_loss, title
 
