@@ -66,6 +66,9 @@ class Model:
     def train_batch(self, X_batch: Tensor, y_batch):
         self.forward(X_batch)
         loss = self.loss(y_batch, self.nodes[-1])
+        for layer in self.layers:
+            if layer.regularizer and layer.has_weights:
+                loss += layer.regularizer(layer.get_weight_no_bias())
         self.backward(loss)
         return loss.values
 
