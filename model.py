@@ -3,6 +3,7 @@ from tensor import Tensor
 from losses import get_loss
 from optimizers import get_optimizer
 from progress_bar import progress_bar
+from layers import *
 
 
 class Model:
@@ -31,13 +32,47 @@ class Model:
         print(f"Model initialized with {len(self.layers)} layers, optimizer: {self.optimizer.name}, batch size: {self.batch_size}, epochs: {self.epochs}, learning rate: {self.learning_rate}, loss function: {self.loss_function}")
 
     def _init_weights(self):
-        rows = self.layers[0].input_size
-        cols = self.layers[0].dim
-        self.layers[0].weights = Tensor(np.random.normal(0, 1/rows, (rows+1, cols)))
-        for k in range(1, len(self.layers)):
-            if hasattr(self.layers[k], 'dim'):
-                rows, cols = cols, self.layers[k].dim
-                self.layers[k].weights = Tensor(np.random.normal(0, 1/rows, (rows+1, cols)))
+        if isinstance(self.layers[0], Dense):
+            rows = self.layers[0].input_size
+            cols = self.layers[0].dim
+            self.layers[0].weights = Tensor(np.random.normal(0, np.sqrt(2/rows), (rows+1, cols)))
+            last_layer = 'dense'
+
+        elif isinstance(self.layers[0], Conv2D):
+            _, C_in, H_in, W_in = self.layers[0].input_size
+            K_H, K_W = self.layers[0].kernel_size
+            padding = self.layers[0].padding
+            stride = self.layers[0].stride
+            kernels = self.layers[0].no_of_kernels
+            self.layers[0].weights = Tensor(np.random.normal(0, np.sqrt(2/(K_H * K_W * C_in)), (kernels, C_in, K_H, K_W)))
+            H_out = (H_in + 2 * padding - K_H) // stride + 1
+            W_out = (W_in + 2 * padding - K_W) // stride + 1
+            old_kernels = kernels
+            last_layer = 'conv2d'
+
+        for layer in self.layers[1:]:
+            if isinstance(layer, Dense):
+                if last_layer == 'dense':
+                    rows = cols
+                elif last_layer == 'conv2d':
+                    rows = H_out * W_out * old_kernels
+                cols = layer.dim
+                layer.weights = Tensor(np.random.normal(0, np.sqrt(2/rows), (rows+1, cols)))
+                last_layer = 'dense'
+
+            elif isinstance(layer, Conv2D):
+                K_H, K_W = layer.kernel_size
+                padding = layer.padding
+                stride = layer.stride
+                kernels = layer.no_of_kernels
+
+                H_out = (H_out + 2 * padding - K_H) // stride + 1
+                W_out = (W_out + 2 * padding - K_W) // stride + 1
+
+                layer.weights = Tensor(np.random.normal(0, np.sqrt(2/(K_H * K_W * old_kernels)), (kernels, old_kernels, K_H, K_W)))
+                old_kernels = kernels
+                last_layer = 'conv2d'
+
 
     def forward(self, X: Tensor):
         if not isinstance(X, Tensor):
