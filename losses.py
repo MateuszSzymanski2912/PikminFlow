@@ -27,13 +27,3 @@ def get_loss(name):
         if callable(func) and func.__name__ == name:
             return func
     raise ValueError(f"Loss function '{name}' not found.")
-
-if __name__=="__main__":
-     # One-hot labels (y) and predictions (y_hat)
-    y_onehot = Tensor(np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]), requires_grad=False)
-    y_hat = Tensor(np.array([[0.7, 0.2, 0.1], [0.1, 0.7, 0.2], [0.1, 0.2, 0.7]]), requires_grad=True)
-
-    loss = categorical_crossentropy(y_onehot, y_hat)
-    loss.backward()
-
-    print(y_hat.grad)

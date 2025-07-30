@@ -380,37 +380,10 @@ class Tensor:
                 self.grad += out.grad.reshape(self.values.shape)
         out._backward = _backward
         return out
-    '''
-    def T(self):
-        out = Tensor(self.values.T, (self,), 'T')
-        def _backward():
-            if self.requires_grad:
-                self.grad += out.grad.T
-        out._backward = _backward
-        return out
 
-    def transpose(self, axes):
-        out = Tensor(self.values.transpose(axes), (self,), 'transpose')
-        def _backward():
-            if self.requires_grad:
-                self.grad += out.grad.transpose(axes)
-        out._backward = _backward
-        return out
-    '''
     def flatten(self, batch_size):
         return self.reshape((batch_size, -1))
-    '''          
-    def scatter_add(self, other, idx):
-        out = Tensor(np.copy(self.values), (self, other), 'scatter_add')
-        out.values[idx] += other.values
-        def _backward():
-            if self.requires_grad:
-                self.grad += out.grad
-            if other.requires_grad:
-                other.grad += out.grad[idx]
-        out._backward = _backward
-        return out
-    '''
+
     def pad(self, pad_width, mode='constant', constant_values=0):
         padded_values = np.pad(self.values, pad_width, mode=mode, constant_values=constant_values)
         out = Tensor(padded_values, (self,), 'pad')

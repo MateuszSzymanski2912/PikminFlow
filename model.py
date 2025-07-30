@@ -35,11 +35,10 @@ class Model:
         if isinstance(self.layers[0], Dense):
             rows = self.layers[0].input_size
             cols = self.layers[0].dim
-            self.layers[0].weights = Tensor(np.random.normal(0, np.sqrt(2/rows), (rows+1, cols)))  # Removed +1
+            self.layers[0].weights = Tensor(np.random.normal(0, np.sqrt(2/rows), (rows+1, cols)))
             last_layer = 'dense'
 
         elif isinstance(self.layers[0], Conv2D):
-            # Get initial input shape (C, H, W)
             _, C_in, H_in, W_in = self.layers[0].input_size
             K_H, K_W = self.layers[0].kernel_size
             padding = self.layers[0].padding
