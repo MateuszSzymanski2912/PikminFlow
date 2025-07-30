@@ -14,7 +14,8 @@ class SimpleOptimizer(Optimizer):
 
     def update(self):
         for layer in self.model.layers:
-            layer.weights.values -= self.model.learning_rate * layer.weights.grad
+            if layer.has_weights:
+                layer.weights.values -= self.model.learning_rate * layer.weights.grad
 
 
 class MomentumOptimizer(Optimizer):
@@ -27,8 +28,9 @@ class MomentumOptimizer(Optimizer):
 
     def update(self):
         for (l, layer) in enumerate(self.model.layers):
-            self.m[l] = self.beta * self.m[l] + (1 - self.beta)*layer.weights.grad
-            layer.weights.values -= self.model.learning_rate*self.m[l]
+            if layer.has_weights:
+                self.m[l] = self.beta * self.m[l] + (1 - self.beta)*layer.weights.grad
+                layer.weights.values -= self.model.learning_rate*self.m[l]
 
 
 class AdaGradOptimizer(Optimizer):
@@ -40,8 +42,9 @@ class AdaGradOptimizer(Optimizer):
 
     def update(self):
         for (l, layer) in enumerate(self.model.layers):
-            self.G[l] += layer.weights.grad**2
-            layer.weights.values -= self.model.learning_rate*layer.weights.grad/np.sqrt(self.G[l] + self.epsilon)
+            if layer.has_weights:
+                self.G[l] += layer.weights.grad**2
+                layer.weights.values -= self.model.learning_rate*layer.weights.grad/np.sqrt(self.G[l] + self.epsilon)
 
 
 class RMSPropOptimizer(Optimizer):
@@ -54,8 +57,9 @@ class RMSPropOptimizer(Optimizer):
 
     def update(self):
         for (l, layer) in enumerate(self.model.layers):
-            self.v[l] = self.beta*self.v[l] + (1 - self.beta)*layer.weights.grad**2
-            layer.weights.values -= self.model.learning_rate*layer.weights.grad/np.sqrt(self.v[l] + self.epsilon)
+            if layer.has_weights:
+                self.v[l] = self.beta*self.v[l] + (1 - self.beta)*layer.weights.grad**2
+                layer.weights.values -= self.model.learning_rate*layer.weights.grad/np.sqrt(self.v[l] + self.epsilon)
 
 
 class AdamOptimizer(Optimizer):
