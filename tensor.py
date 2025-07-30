@@ -14,6 +14,10 @@ class Tensor:
         self.grad = np.zeros_like(self.values) if self.requires_grad else None
         self.epsilon = 1e-10
 
+    @property
+    def shape(self):
+        return self.values.shape
+
     def __repr__(self):
         return f"Tensor(values={self.values}, grad={self.grad})"
     
@@ -28,8 +32,38 @@ class Tensor:
     def release(self):
         self.values = None if not self.retain_values and not self._is_leaf else self.values
 
+    @staticmethod
+    def stack(tensors: list, axis=0):
+        assert all(isinstance(t, Tensor) for t in tensors)
+        values = np.stack([t.values for t in tensors], axis=axis)
+        requires_grad = any(t.requires_grad for t in tensors)
+        out = Tensor(values, requires_grad=requires_grad)
+
+        def _backward():
+            if not requires_grad:
+                return
+            grads = np.split(out.grad, len(tensors), axis=axis)
+            for t, g in zip(tensors, grads):
+                if t.requires_grad:
+                    t.grad += np.squeeze(g, axis=axis)
+
+        out._prev = set(tensors)
+        out._op = "stack"
+        out._backward = _backward
+        return out
+
 
     #Basic methods for forward and backward propagation
+    def __getitem__(self, idx):
+        out = Tensor(self.values[idx], (self,), 'slice')
+        def _backward():
+            if self.requires_grad:
+                grad = np.zeros_like(self.values)
+                grad[idx] += out.grad
+                self.grad += grad
+        out._backward = _backward
+        return out
+    
     def __add__(self, other):
         other = other if isinstance(other, Tensor) else Tensor(other)
         out = Tensor(self.values + other.values, (self, other), '+')
@@ -47,8 +81,11 @@ class Tensor:
         if isinstance(other, Tensor):
             out = Tensor(self.values * other.values, (self, other), '*')
             def _backward():
-                self.grad += other.values * out.grad if self.requires_grad else None
-                other.grad += self.values * out.grad if other.requires_grad else None
+                if self.requires_grad and self.grad is not None:
+                    self.grad += other.values * out.grad
+                if other.requires_grad and other.grad is not None:
+                    other.grad += self.values * out.grad
+
             out._backward = _backward
         else:
             out = Tensor(self.values * other, (self,), '*')
@@ -157,6 +194,14 @@ class Tensor:
     def __lt__(self, other):
         other = other if isinstance(other, Tensor) else Tensor(other)
         return self.values < other.values
+    
+    def __neg__(self):
+        out = Tensor(-self.values, (self,), '-')
+        def _backward():
+            if self.requires_grad:
+                self.grad -= out.grad
+        out._backward = _backward
+        return out
     
     def log(self, base = np.e):
         out = Tensor(np.log(self.values)/np.log(base), (self,), 'log')
@@ -328,6 +373,58 @@ class Tensor:
         self._backward = _backward
         return self
     
+    def reshape(self, shape):
+        out = Tensor(self.values.reshape(shape), (self,), 'reshape')
+        def _backward():
+            if self.requires_grad:
+                self.grad += out.grad.reshape(self.values.shape)
+        out._backward = _backward
+        return out
+    '''
+    def T(self):
+        out = Tensor(self.values.T, (self,), 'T')
+        def _backward():
+            if self.requires_grad:
+                self.grad += out.grad.T
+        out._backward = _backward
+        return out
+
+    def transpose(self, axes):
+        out = Tensor(self.values.transpose(axes), (self,), 'transpose')
+        def _backward():
+            if self.requires_grad:
+                self.grad += out.grad.transpose(axes)
+        out._backward = _backward
+        return out
+    '''
+    def flatten(self, batch_size):
+        return self.reshape((batch_size, -1))
+    '''          
+    def scatter_add(self, other, idx):
+        out = Tensor(np.copy(self.values), (self, other), 'scatter_add')
+        out.values[idx] += other.values
+        def _backward():
+            if self.requires_grad:
+                self.grad += out.grad
+            if other.requires_grad:
+                other.grad += out.grad[idx]
+        out._backward = _backward
+        return out
+    '''
+    def pad(self, pad_width, mode='constant', constant_values=0):
+        padded_values = np.pad(self.values, pad_width, mode=mode, constant_values=constant_values)
+        out = Tensor(padded_values, (self,), 'pad')
+        def _backward():
+            if self.requires_grad:
+                slices = []
+                for (x, y) in pad_width:
+                    y = -y if y > 0 else None
+                    slices.append(slice(x, y))
+                self.grad += out.grad[tuple(slices)]
+        out._backward = _backward
+        return out
+
+
     #activation functions
     def softmax(self):
         shifted = self.values - np.max(self.values, axis=-1, keepdims=True)
